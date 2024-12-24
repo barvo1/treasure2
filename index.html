@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>寻宝游戏</title>
+<style>
+  #game {
+    width: 800px;
+    height: 600px;
+    border: 1px solid black;
+    position: relative;
+    overflow: hidden;
+    background-image: url('background.jpg'); /* 替换为你的背景图片路径 */
+    background-size: cover; /* 背景图片覆盖整个游戏区域 */
+    background-repeat: no-repeat; /* 防止背景图片重复 */
+    background-position: center; /* 背景图片居中显示 */
+  }
+  .item {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+  }
+  .player {
+    width: 50px;
+    height: 50px;
+    background-image: url('player.png'); /* 替换为你的主角图片路径 */
+    background-size: cover;
+    position: absolute;
+  }
+  .guard {
+    width: 75px;
+    height: 75px;
+    background-image: url('guard.png'); /* 替换为你的守卫图片路径 */
+    background-size: cover;
+    position: absolute;
+  }
+  .treasure {
+    width: 75px;
+    height: 50px;
+    background-image: url('treasure.png'); /* 替换为你的宝箱图片路径 */
+    background-size: cover;
+    position: absolute;
+  }
+  .clue {
+    width: 50px;
+    height: 50px;
+    background-image: url('clue.png'); /* 替换为你的线索图片路径 */
+    background-size: cover;
+    position: absolute;
+  }
+  .gate {
+    width: 50px;
+    height: 100px;
+    background-color: grey;
+    position: absolute;
+  }
+  .wall1 {
+    width: 50px;
+    height: 250px;
+    background-color: black;
+    position: absolute;
+  }
+  .wall2 {
+    width: 50px;
+    height: 50px;
+    background-color: black;
+    position: absolute;
+  }
+  .wall3 {
+    width: 450px;
+    height: 50px;
+    background-color: black;
+    position: absolute;
+  }
+  p {
+    color: yellow; 
+  }
+  #loadingText {
+    position: absolute;
+    top: 50%;
+    left: 810px; /* 将左边界紧挨game模块右边界 */
+    transform: translateY(-50%);
+    color: black;
+    background-image: url('loading_background.jpg'); /* 添加背景图片 */
+    background-size: cover; /* 背景图片覆盖整个元素 */
+    background-repeat: no-repeat; /* 防止背景图片重复 */
+    background-position: center; /* 背景图片居中显示 */
+    height:500px
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <p>方向键移动，收集线索，按下Enter键解码线索开启神庙大门</p>
+  <div id="player" class="player"></div>
+  <div id="guard" class="guard"></div>
+  <div id="treasure" class="treasure"></div>
+  <div id="clue" class="clue"></div>
+  <div id="gate" class="gate"></div>
+  <div id="wall1" class="wall1"></div>
+  <div id="wall2" class="wall2"></div>
+  <div id="wall3" class="wall3"></div>
+</div>
+<div id="loadingText"></div>
+<button onclick="playSound()">播放音乐</button>
+<script>
+  // 初始化游戏
+  function init() {
+    var playerInfo = localStorage.getItem('playerInfo');
+    if (playerInfo) {
+      var info = JSON.parse(playerInfo);
+      playerX = info.playerX;
+      playerY = info.playerY;
+      hasClue = info.hasClue;
+      playerId = info.playerId;
+      playerName = info.playerName;
+    } else {
+      playerX = 50;
+      playerY = 50;
+      hasClue = false;
+      playerId = generatePlayerId();
+      playerName = 'Player';
+    }
+    guardX = 400;
+    guardY = 300;
+    treasureX = 700;
+    treasureY = 500;
+    clueX = 200;
+    clueY = 200;
+    gateX = 300;
+    gateY = 300;
+    wall1X = 300;
+    wall1Y = 400;
+    wall2X = 300;
+    wall2Y = 250;
+    wall3X = 350;
+    wall3Y = 250;
+    updatePositions();
+  }
+
+  // 更新元素位置
+  function updatePositions() {
+    player.style.left = playerX + 'px';
+    player.style.top = playerY + 'px';
+    guard.style.left = guardX + 'px';
+    guard.style.top = guardY + 'px';
+    treasure.style.left = treasureX + 'px';
+    treasure.style.top = treasureY + 'px';
+    clue.style.left = clueX + 'px';
+    clue.style.top = clueY + 'px';
+    gate.style.left = gateX + 'px';
+    gate.style.top = gateY + 'px';
+    wall1.style.left = wall1X + 'px';
+    wall1.style.top = wall1Y + 'px';
+    wall2.style.left = wall2X + 'px';
+    wall2.style.top = wall2Y + 'px';
+    wall3.style.left = wall3X + 'px';
+    wall3.style.top = wall3Y + 'px';
+  }
+
+  // 移动主角
+  function movePlayer(event) {
+    switch(event.key) {
+      case 'ArrowUp':
+        playerY -= 10;
+        break;
+      case 'ArrowDown':
+        playerY += 10;
+        break;
+      case 'ArrowLeft':
+        playerX -= 10;
+        player.style.transform = 'scaleX(1)'; // 左移时翻转图片
+        break;
+      case 'ArrowRight':
+        playerX += 10;
+        player.style.transform = 'scaleX(-1)'; // 右移时恢复图片
+        break;
+      case 'Enter': // 解码线索的互动键
+        if (hasClue) {
+          alert('解码成功，可以打开大门！');
+          // 可以在这里暂停游戏
+        } else {
+          alert('没有线索，无法解码！');
+        }
+        break;
+    }
+    updatePositions();
+    checkCollision();
+  }
+
+  // 检查碰撞
+  function checkCollision() {
+    var playerRect = player.getBoundingClientRect();
+    var guardRect = guard.getBoundingClientRect();
+    var treasureRect = treasure.getBoundingClientRect();
+    var clueRect = clue.getBoundingClientRect();
+    var gateRect = gate.getBoundingClientRect();
+    var wall1Rect = wall1.getBoundingClientRect();
+    var wall2Rect = wall2.getBoundingClientRect();
+    var wall3Rect = wall3.getBoundingClientRect();
+
+    if (isColliding(playerRect, guardRect)) {
+      alert('与神庙守卫相撞，游戏结束！');
+      // 可以在这里暂停游戏
+    } else if (isColliding(playerRect, treasureRect)) {
+      alert('找到宝藏，游戏成功！');
+      // 可以在这里暂停游戏
+    } else if (isColliding(playerRect, clueRect)) {
+      alert('找到线索！');
+      hasClue = true;
+      clue.style.display = 'none'; // 线索方块消失
+    } else if (hasClue && isColliding(playerRect, gateRect)) {
+      alert('到达神庙大门，打开大门！');
+      gate.style.display = 'none'; // 大门消失
+      // 可以在这里暂停游戏
+    } else if (!hasClue && isColliding(playerRect, gateRect)) {
+      alert('未解码线索无法开启大门！');
+      // 可以在这里暂停游戏
+    } else if (isColliding(playerRect, wall1Rect) ||
+               isColliding(playerRect, wall2Rect) ||
+               isColliding(playerRect, wall3Rect)) {
+      alert('与神庙墙相撞，无法移动！');
+    }
+  }
+
+  // 判断两个元素是否碰撞
+  function isColliding(rect1, rect2) {
+    return !(
+      rect1.right < rect2.left ||
+      rect1.left > rect2.right ||
+      rect1.bottom < rect2.top ||
+      rect1.top > rect2.bottom
+    );
+  }
+
+  // 初始化游戏
+  init();
+
+  // 监听键盘事件
+  document.addEventListener('keydown', movePlayer);
+
+  // 异步加载txt文档
+  fetch('loadingtext.txt')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('loadingText').innerText = data;
+    })
+    .catch(error => {
+      console.error('Error loading the txt file:', error);
+    });
+
+  // 更新玩家信息
+  function updatePlayerInfo() {
+    var playerInfo = {
+      playerX: playerX,
+      playerY: playerY,
+      hasClue: hasClue,
+      playerId: playerId,
+      playerName: playerName
+    };
+    localStorage.setItem('playerInfo', JSON.stringify(playerInfo));
+  }
+
+  // 监听玩家移动事件
+  document.addEventListener('keydown', updatePlayerInfo);
+
+  // 生成玩家ID
+  function generatePlayerId() {
+    return Math.random().toString(36).substr(2, 9);
+  }
+
+  // 播放背景音乐
+  contextClass = window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
+try {
+  var context = new contextClass();
+  var source = null;
+  var audioBuffer = null;
+
+  function stopSound() {
+    if (source) {
+      source.stop(musics); //立即停止
+    }
+  }
+
+  function playSound() {
+    source = context.createBufferSource();
+    source.buffer = audioBuffer;
+    source.loop = true;
+    source.connect(context.destination);
+    source.start(0); //立即播放    
+    console.log('音频已开始播放');
+  }
+  function initSound(arrayBuffer) {
+    context.decodeAudioData(arrayBuffer, function(buffer) { //解码成功时的回调函数
+      audioBuffer = buffer;
+      console.log('音频文件已成功加载');
+      playSound(); // 修正：在解码成功后立即播放音乐
+    }, function(e) { //解码出错时的回调函数
+      console.log('404', e);
+    });
+  }
+
+  function loadAudioFile(url) {
+    var xhr = new XMLHttpRequest(); //通过XHR下载音频文件
+    xhr.open('GET', url, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) { //下载完成
+      initSound(this.response);
+    };
+    xhr.send();
+  }
+  //这里用来存储背景音乐的路径
+  var playMusic = true; // 设置为true表示播放音乐
+  if (playMusic) {
+    loadAudioFile('Canon.mp3');
+  }
+} catch (e) {
+  console.log('无法找到音乐！');
+}
+</script>
+</body>
+</html>
